@@ -10,16 +10,14 @@ def video_detection(path_x, output_path):
     frame_width = int(cap.get(3))
     frame_height = int(cap.get(4))
 
-    model = YOLO("YOLO-Weights/bestest.pt")
-    classNames = ['Excavator', 'Gloves', 'Helmet', 'Ladder', 'Mask', 'NO-Helmet',
-                  'NO-Mask', 'NO-Safety Vest', 'Person', 'SUV', 'Safety Cone', 'Safety Vest',
-                  'bus', 'dump truck', 'fire hydrant', 'machinery', 'mini-van', 'sedan', 'semi',
-                  'trailer', 'truck and trailer', 'truck', 'van', 'vehicle', 'wheel loader',
-                  'hairnet', 'no_hairnet', 'mask_weared_incorrect', 'with_mask', 'without_mask']
-
-    # Define classes to detect (Updated to include Hairnet, Mask, Safety Vest, Person)
-    target_classes = ['Helmet', 'Mask', 'Safety Vest', 'Person']
-
+    model = YOLO("YOLO-Weights/best.pt")
+    
+    # Update class names to only include the target classes.
+    classNames = ['hairnet', 'helmet', 'mask', 'person', 'safety vest']
+    
+    # Define classes to detect (Updated to include only the specified classes)
+    target_classes = ['hairnet', 'helmet', 'mask', 'person', 'safety vest']
+    
     # Initialize variables
     start_time = datetime.now()
     detection_results = []
@@ -55,7 +53,7 @@ def video_detection(path_x, output_path):
                 cls = int(box.cls[0])
                 class_name = classNames[cls]
 
-                # Only consider target classes
+                # Only consider target classes and confidence threshold
                 if class_name not in target_classes or conf <= 0.6:
                     continue
 
@@ -64,7 +62,7 @@ def video_detection(path_x, output_path):
                     current_frame_labels[class_name] = True
 
                 # If we detect a "Person", store the bounding box to draw it once
-                if class_name == "Person" and conf > 0.6:
+                if class_name == "person" and conf > 0.6:
                     person_box = (x1, y1, x2, y2)
 
         # Check if person_box is None before drawing
@@ -74,7 +72,7 @@ def video_detection(path_x, output_path):
             # Draw labels for the target classes (including Hairnet)
             y_offset = person_box[1] - label_offset  # Offset for labels based on "Person" position
             for label in target_classes:
-                if label != "Person" and label in current_frame_labels:
+                if label != "person" and label in current_frame_labels:
                     label_text = label.replace("NO-", "")
                     label_color = colors['detected'] if current_frame_labels[label] else colors['not_detected']  # Green if detected, Red if not
                     t_size = cv2.getTextSize(label_text, 0, fontScale=1, thickness=2)[0]
@@ -89,7 +87,7 @@ def video_detection(path_x, output_path):
         # Write the frame to the output video
         out.write(img)
 
-        # Yield the processed frame
+        # Yield the processed frame for display (optional)
         yield img
 
         # Reset detection results every 30 seconds (if required)
@@ -109,6 +107,7 @@ def video_detection(path_x, output_path):
 video_path = r"C:\Users\acer\SMF\orj_1.mp4"  # Make sure to use raw string or escape backslashes
 output_path = os.path.join(os.path.dirname(video_path), "CV_out1.mp4")  # Save the output video in the same directory as the input video
 
+# Process the video frames
 for img in video_detection(video_path, output_path):
     # You can display the frames, but now the video is being saved as well
     cv2.imshow("Detection Result", img)
